@@ -1,0 +1,15 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <pthread.h>
+#include <unistd.h>
+
+#define NUM_THREADS 8
+
+void* printHello(void *args)
+{
+    int thread_arg;
+    sleep(1);
+    thread_arg=(int)(*((int*)args));
+    
+
+}

@@ -1,0 +1,145 @@
+一、自动编译工具MAKE以及config,h文件的生成
+
+（1）首先，编写源文件hello.c。
+#include <stdio.h>  
+int main(int argc, char** argv[])  
+{  
+    printf("hello, world!\n");  
+    return 1;  
+}  
+（2）接下来，我们需要创建一个Makefile.am，同时编写上脚本。
+SUBDIRS=  
+  
+bin_PROGRAMS=hello  
+hello_SOURCES=hello.c    
+
+（3）直接输入autoscan，生成文件configure.scan，再改名为configure.ac。
+修改脚本AC_INIT(FULL-PACKAGE-NAME, VERSION, BUG-REPORT-ADDRESS)
+为AC_INIT(hello, 1.0, feixiaoxing@163.com)
+同时，在AC_CONFIG_HEADER([config.h])后面添加
+AM_INIT_AUTOMAKE(hello, 0.1)
+
+（4）依次输入aclocal命令、autoheader命令
+
+（5）创建4个文件，分别为README、NEWS、AUTHORS和ChangeLog
+
+（6）依次输入automake -a、autoconf命令
+
+（7）输入./configure，生成最终的Makefile
+
+（8）如果需要编译，输入make；如果需要安装， 输入make install；如果需要发布软件包，输入make dist
+
+
+
+
+
+
+
+二、动态链接库so
+
+ 动态链接库不是Linux独有的特性，在windows下面也存在这样的特性。一般来说，windows下面的动态连接库是以*.dll作为结尾的，而linux下面的动态连接库是以*.so结尾的。和静态链接库相比，动态连接库可以共享内存资源，这样可以减少内存消耗。另外，动态连接是需要经过操作系统加载器的帮助才能被普通执行文件发现的，所以动态连接库可以减少链接的次数。有了这个特点，我们就不难发现为什么很多软件的补丁其实都是以动态库发布的。
+    那么，在Linux上动态库是怎么生成的呢？
+#include "test.h"  
+  
+int add(int a, int b)  
+{  
+    return a + b;  
+}  
+    头文件格式，
+#ifndef  _TEST_H  
+#define  _TEST_H  
+  
+int add(int a, int b);  
+#endif  
+    此时如果我们想要生成动态库，要做的工作其实非常简单，输入gcc test.c -shared -fPIC -o libtest.so即可。回车后输入ls，我们就可以发现当前目录下面出现了libtest.so文件。
+
+[命令参数]
+-shared该选项指定生成动态连接库（让连接器生成T类型的导出符号表，有时候也生成弱连接W类型的导出符号），不用该标志外部程序无法连接。相当于一个可执行文件
+
+-fPIC：表示编译为位置独立的代码，不用此选项的话编译后的代码是位置相关的所以动态载入时是通过代码拷贝的方式来满足不同进程的需要，而不能达到真正代码段共享的目的。
+
+-L.：表示要连接的库在当前目录中
+
+-ltest：编译器查找动态连接库时有隐含的命名规则，即在给出的名字前面加上lib，后面加上.so来确定库的名称
+
+LD_LIBRARY_PATH：这个环境变量指示动态连接器可以装载动态库的路径。
+
+
+#include <stdio.h>  
+#include "test.h"  
+  
+int main()  
+{  
+    printf("%d\n", add(2, 3));  
+    return 1;  
+}  
+    在上面的代码当中，我们发现使用到了add函数，那么此时如何才能生成一个执行文件呢？也很简单，输入gcc hello.c -o  hello ./libtest.so。然后输入./hello，此时可以验证一下执行文件运行是否正确。在编写静态库的时候，我说过静态库是汇编链接到执行文件当中的，而动态库不会。朋友们可以做个小实验，删除libtest.so，然后输入./hello。此时大家可以看看系统有没有错误返回？
+    这个时候，有的朋友就会问了，那在windows下面dll应该怎么编写呢？其实也不难，只要在test.h上面稍作改变即可。其他的步骤和静态库的操作是基本类似的。
+#ifndef  _TEST_H  
+#define _TEST_H  
+  
+#ifdef USR_DLL  
+#define DLL_API _declspec(dllexport)  
+#else  
+#define DLL_API _declspec(dllimport)  
+#endif  
+  
+DLL_API int add(int a, int b);  
+  
+#endif  
+
+
+
+
+
+
+
+
+
+
+
+三、静态库a
+
+一般来说库函数分为两种方式：静态库和动态库。两者的区别其实很小，静态库是必须要链接到执行文件中去的，而动态库是不需要链接到最后的执行文件中的。怎么理解呢？也就是说，对于最后的执行文件而言，你是否删除静态库无所谓。但是，一旦你删除了动态库，最后的执行文件就玩不转了。
+【C文件】
+#include "test.h"  
+int add(int a, int b)  
+{  
+    return a + b;  
+}  
+   
+【头文件】
+#ifndef _TEST_H  
+#define _TEST_H  
+  
+int add(int a, int b);  
+
+如果你需要在windows上面创建一个静态库，那么你需要进行下面的操作，
+（1）打开visual C++ 6.0工具，单击【File】-> 【New】->【Projects】
+（2）选择【Win32 Static Library】，同时在【Project Name】写上项目名称，在【Location】选择项目保存地址
+（3）单击【Ok】，继续单击【Finish】，再单击【Ok】，这样一个静态库工程就创建好了
+（4）重新单击【File】->【New】->【Files】，选择【C++ Source Files】，
+（5）选中【Add to pproject】，将源文件加入到刚才创建的工程中去，在File中输入文件名+.c后缀
+（6）重复4、5的操作，加入一个文件名+.h头文件
+（7）分别在头文件和源文件中输入上面的代码，单击F7按钮，即可在Debug目录中生成*.lib静态库文件
+
+    那么，在linux下面应该怎么运行呢？其实很简单，两条命令解决，
+（1）首先生成*.o文件，输入gcc -c test.c -o test.o
+（2）利用ar命令生成静态库，输入ar rc libtest.a test.o
+
+ 此时如果还有一个hello.c文件使用到了这个静态库，比如说 ，
+#include <stdio.h>  
+#include "test.h"  
+  
+int main()  
+{  
+    printf("%d\n", add(2, 3));  
+    return 1;  
+}  
+    其实也很简单，输入一个简单的命令就可以生成执行文件了，
+（1）首先输入gcc hello.c -o hello ./libtest.a
+（2）输入./hello，验证生成的执行文件是否正确
+（3）可以删除libtest.a文件，重新输入./hello，验证执行文件是否可以正常运行
+
+
+

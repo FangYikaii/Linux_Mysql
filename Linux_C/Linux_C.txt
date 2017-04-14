@@ -1,0 +1,67 @@
+一、signal()
+1. 功能
+设置某一信号的对应动作
+2. 声明
+#include <signal.h>
+typedef void (*sighandler_t)(int);
+sighandler_t signal(int signum, sighandler_t handler);
+3. 参数说明　
+第一个参数signum：指明了所要处理的信号类型，它可以取除了SIGKILL和SIGSTOP外的任何一种信号。 　 
+第二个参数handler：描述了与信号关联的动作，它可以取以下三种值： 
+（1）SIG_IGN 　　
+这个符号表示忽略该信号。 
+例如：
+#include <stdio.h>
+#include <signal.h>
+int main(int argc, char *argv[])
+{
+    signal(SIGINT, SIG_IGN);
+    while(1);
+    return 0;
+}
+SIGINT信号代表由InterruptKey产生，通常是CTRL +C 或者是DELETE 。执行上述代码时，按下CTRL + C程序没有反应。这就对了，如果我们想结束该程序可以按下CTRL +\来结束，当我们按下CTRL +\组合键时，产生了SIGQUIT信号，此信号并没有被忽略。
+（2）SIG_DFL 　　
+这个符号表示恢复对信号的系统默认处理。不写此处理函数默认也是执行系统默认操作。 
+例如
+#include <stdio.h>
+#include <signal.h>
+int main(int argc, char *argv[])
+{
+    signal(SIGINT, SIG_DFL);
+    while(1);
+    return 0;
+}
+这时就可以按下CTRL +C 来终止该进程了。把signal(SIGINT, SIG_DFL);这句去掉，效果是一样的
+（3）sighandler_t类型的函数指针 　　 
+上面提到了sighandler_t类型声明：
+typedef void (*sighandler_t)(int);
+sighandler_t signal(int signum, sighandler_t handler);
+此函数必须在signal()被调用前申明，handler中为这个函数的名字。当接收到一个类型为sig的信号时，就执行handler 所指定的函数。（int）signum是传递给它的唯一参数。执行了signal()调用后，进程只要接收到类型为sig的信号，不管其正在执行程序的哪一部分，就立即执行func()函数。当func()函数执行结束后，控制权返回进程被中断的那一点继续执行。 
+例如
+#include <stdio.h>
+#include <signal.h>
+typedef void (*signal_handler)(int);
+void signal_handler_fun(int signum) 
+{
+    printf("catch signal %d\n", signum);
+}
+
+int main(int argc, char *argv[]) 
+{
+    signal(SIGINT, signal_hander_fun);
+    while(1);
+    return 0;
+}
+执行时，当我们按下CTRL +C键时，会执行我们定义的信号处理函数。
+catch signal 2
+catch signal 2
+catch signal 2
+catch signal 2
+=退出
+每当我们按下CTRL +C键时会打印该信号的number.可以看出该信号的num为2。要想退出可以按下CTRL +\ 打印结果为最后一行。
+4. 函数说明　
+signal()会依参数signum 指定的信号编号来设置该信号的处理函数。当指定的信号到达时就会跳转到参数handler指定的函数执行。
+当一个信号的信号处理函数执行时，如果进程又接收到了该信号，该信号会自动被储存而不会中断信号处理函数的执行，直到信号处理函数执行完毕再重新调用相应的处理函数。但是如果在信号处理函数执行时进程收到了其它类型的信号，该函数的执行就会被中断。
+5. 返回值
+返回先前的信号处理函数指针，如果有错误则返回SIG_ERR(-1)。 　
+
