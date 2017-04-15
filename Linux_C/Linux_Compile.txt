@@ -1,0 +1,303 @@
+一、config,h文件的生成
+
+（1）首先，编写源文件hello.c。
+#include <stdio.h>  
+int main(int argc, char** argv[])  
+{  
+    printf("hello, world!\n");  
+    return 1;  
+}  
+（2）接下来，我们需要创建一个Makefile.am，同时编写上脚本。
+SUBDIRS=  
+  
+bin_PROGRAMS=hello  
+hello_SOURCES=hello.c    
+
+（3）直接输入autoscan，生成文件configure.scan，再改名为configure.ac。
+修改脚本AC_INIT(FULL-PACKAGE-NAME, VERSION, BUG-REPORT-ADDRESS)
+为AC_INIT(hello, 1.0, feixiaoxing@163.com)
+同时，在AC_CONFIG_HEADER([config.h])后面添加
+AM_INIT_AUTOMAKE(hello, 0.1)
+
+（4）依次输入aclocal命令、autoheader命令
+
+（5）创建4个文件，分别为README、NEWS、AUTHORS和ChangeLog
+
+（6）依次输入automake -a、autoconf命令
+
+（7）输入./configure，生成最终的Makefile
+
+（8）如果需要编译，输入make；如果需要安装， 输入make install；如果需要发布软件包，输入make dist
+
+
+
+
+
+
+
+二、动态链接库.so
+
+ 动态链接库不是Linux独有的特性，在windows下面也存在这样的特性。一般来说，windows下面的动态连接库是以*.dll作为结尾的，而linux下面的动态连接库是以*.so结尾的。和静态链接库相比，动态连接库可以共享内存资源，这样可以减少内存消耗。另外，动态连接是需要经过操作系统加载器的帮助才能被普通执行文件发现的，所以动态连接库可以减少链接的次数。有了这个特点，我们就不难发现为什么很多软件的补丁其实都是以动态库发布的。
+    那么，在Linux上动态库是怎么生成的呢？
+#include "test.h"  
+  
+int add(int a, int b)  
+{  
+    return a + b;  
+}  
+    头文件格式，
+#ifndef  _TEST_H  
+#define  _TEST_H  
+  
+int add(int a, int b);  
+#endif  
+    此时如果我们想要生成动态库，要做的工作其实非常简单，输入gcc test.c -shared -fPIC -o libtest.so即可。回车后输入ls，我们就可以发现当前目录下面出现了libtest.so文件。
+
+[命令参数]
+-shared该选项指定生成动态连接库（让连接器生成T类型的导出符号表，有时候也生成弱连接W类型的导出符号），不用该标志外部程序无法连接。相当于一个可执行文件
+
+-fPIC：表示编译为位置独立的代码，不用此选项的话编译后的代码是位置相关的所以动态载入时是通过代码拷贝的方式来满足不同进程的需要，而不能达到真正代码段共享的目的。
+
+-L.：表示要连接的库?诘鼻澳柯贾?
+
+-ltest：编译器查找动态连接库时有隐含的命名规则，即在给出的名字前面加上lib，后面加上.so来确定库的名称
+
+LD_LIBRARY_PATH：这个环境变量指示动态连接器可以装载动态库的路径。
+
+
+#include <stdio.h>  
+#include "test.h"  
+  
+int main()  
+{  
+    printf("%d\n", add(2, 3));  
+    return 1;  
+}  
+    在上面的代码当中，我们发现使用到了add函数，那么此时如何才能生成一个执行文件呢？也很简单，输入gcc hello.c -o  hello ./libtest.so。然后输入./hello，此时可以验证一下执行文件运行是否正确。在编写静态库的时候，我说过静态库是汇编链接到执行文件当中的，而动态库不会。朋友们可以做个小实验，删除libtest.so，然后输入./hello。此时大家可以看看系统有没有错误返回？
+    这个时候，有的朋友就会问了，那在windows下面dll应该怎么编写呢？其实也不难，只要在test.h上面稍作改变即可。其他的步骤和静态库的操作是基本类似的。
+#ifndef  _TEST_H  
+#define _TEST_H  
+  
+#ifdef USR_DLL  
+#define DLL_API _declspec(dllexport)  
+#else  
+#define DLL_API _declspec(dllimport)  
+#endif  
+  
+DLL_API int add(int a, int b);  
+  
+#endif  
+
+
+
+
+
+
+
+
+
+
+
+三、静态库a
+
+(.o--可执行文件，.a是多个.o文件的组合)
+一般来说库函数分为两种方式：静态库和动态库。两者的区别其实很小，静态库是必须要链接到执行文件中去的，而动态库是不需要链接到最后的执行文件中的。怎么理解呢？也就是说，对于最后的执行文件而言，你是否删除静态库无所谓。但是，一旦你删除了动态库，最后的执行文件就玩不转了。
+【C文件】
+#include "test.h"  
+int add(int a, int b)  
+{  
+    return a + b;  
+}  
+   
+【头文件】
+#ifndef _TEST_H  
+#define _TEST_H  
+  
+int add(int a, int b);  
+
+如果你需要在windows上面创建一个静态库，那么你需要进行下面的操作，
+（1）打开visual C++ 6.0工具，单击【File】-> 【New】->【Projects】
+（2）选择【Win32 Static Library】，同时在【Project Name】写上项目名称，在【Location】选择项目保存地址
+（3）单击【Ok】，继续单击【Finish】，再单击【Ok】，这样一个静态库工程就创建好了
+（4）重新单击【File】->【New】->【Files】，选择【C++ Source Files】，
+（5）选中【Add to pproject】，将源文件加入到刚才创建的工程中去，在File中输入文件名+.c后缀
+（6）重复4、5的操作?尤胍桓鑫募?.h头?募?
+（7）分别在头文件和源文件中输入上面的代码，单击F7按钮，即可在Debug目录中生成*.lib静态库文件
+
+    那么，在linux下面应该怎么运行呢？其实很简单，两条命令解决，
+（1）首先生成*.o文件，输入gcc -c test.c -o test.o
+（2）利用ar命令生成静态库，输入ar rc libtest.a test.o
+
+ 此时如果还有一个hello.c文件使用到了这个静态库，比如说 ，
+#include <stdio.h>  
+#include "test.h"  
+  
+int main()  
+{  
+    printf("%d\n", add(2, 3));  
+    return 1;  
+}  
+    其实也很简单，输入一个简单的命令就可以生成执行文件了，
+（1）首先输入gcc hello.c -o hello ./libtest.a
+（2）输入./hello，验证生成的执行文件是否正确
+（3）可以删除libtest.a文件，重新输入./hello，验证执行文件是否可以正常运行
+
+
+
+四、MAKE的编写
+关于程序的编译和链接
+一般来说，无论是C还是C++，首先要把源文件编译成中间代码文件，在Windows下也就是 .obj 文件，UNIX下是 .o 文件，即 Object File，这个动作叫做编译（compile）。
+一般来说，每个源文件都应该对应于一个中间目标文件（O文件或是OBJ文件）。然后再把大量的Object File合成执行文件，这个动作叫作链接（link）。
+编译器需要的是语法的正确，函数与变量的声明的正确。对于后者，通常是你需要告诉编译器头文件的所在位置（头文件中应该只是声明，而定义应该放在C/C++文件中），只要所有的语法正确，编译器就可以编译出中间目标文件。
+链接时，主要是链接函数和全局变量，所以，我们可以使用这些中间目标文件（O文件或是OBJ文件）来链接我们的应用程序。
+链接器并不管函数所在的源文件，只管函数的中间目标文件（Object File），在大多数时候，由于源文件太多，编译生成的中间目标文件太多，而在链接时需要明显地指出中间目标文件名，这对于编译很不方便。
+所以，我们要给中间目标文件打个包，在Windows下这种包叫“库文件”（Library File)，也就是 .lib 文件，在UNIX下，是Archive File，也就是 .a 文件。
+　　
+下面我们开始看看如何自己写出makefile。
+　　Makefile的规则
+　　目标 ： 需要的条件 （注意冒号两边有空格）
+　　　　命令　　（注意前面用tab键开头）
+　　解释一下：
+　　1 目标可以是一个或多个，可以是Object File，也可以是执行文件，甚至可以是一个标签。
+　　2 需要的条件就是生成目标所需要的文件或目标
+　　3 命令就是生成目标所需要执行的脚本
+　　总结一下，就是说一条makefile规则规定了编译的依赖关系，也就是目标文件依赖于条件，生成规则用命令来描述。在编译时，如果需要的条件的文件比目标更新的话，就会执行生成命令来更新目标。
+
+【例子】
+　　edit : main.o kbd.o command.o display.o insert.o search.o files.o utils.o
+          gcc -o edit main.o kbd.o command.o display.o insert.o search.o files.o utils.o
+
+    main.o : main.c defs.h
+            gcc -c main.c
+    kbd.o : kbd.c defs.h command.h
+            gcc -c kbd.c
+    command.o : command.c defs.h command.h
+            gcc -c command.c
+    display.o : display.c defs.h buffer.h
+            gcc -c display.c
+    insert.o : insert.c defs.h buffer.h
+            gcc -c insert.c
+    search.o : search.c defs.h buffer.h
+            gcc -c search.c
+    files.o : files.c defs.h buffer.h command.h
+            gcc -c files.c
+    utils.o : utils.c defs.h
+            gcc -c utils.c
+    clean :
+            rm edit main.o kbd.o command.o display.o /
+               insert.o search.o files.o utils.o
+
+注意：gcc的-c 是只编译不链接；-o 确定输出文件的名称 -g 为了gdb调试
+
+【例子】
+  首先编写add.c文件
+#include "test.h"  
+#include <stdio.h>  
+  
+int add(int a, int b)  
+{  
+    return a + b;  
+}  
+  
+int main()  
+{  
+    printf(" 2 + 3 = %d\n", add(2, 3));  
+    printf(" 2 - 3 = %d\n", sub(2, 3));  
+    return 1;  
+}  
+    再编写sub.c文件，
+#include "test.h"  
+  
+int sub(int a, int b)  
+{  
+    return a - b;  
+}  
+    最后编写test.h文件，
+#ifndef _TEST_H  
+#define _TEST_H  
+  
+int add(int a, int b);  
+int sub(int a, int b);  
+#endif  
+    那么，就是这三个简单的文件，应该怎么编写makefile呢？
+test: add.o sub.o  
+    gcc -o test add.o sub.o  
+  
+add.o: add.c test.h  
+    gcc -c add.c  
+  
+sub.o: sub.c test.h  
+    gcc -c sub.c      
+      
+clean:  
+    rm -rf test  
+    rm -rf *.o  
+
+
+
+  　make是如何工作的
+　　在默认的方式下，也就是我们只输入make命令。那么，
+    1、make会在当前目录下找名字叫“Makefile”或“makefile”的文件。
+    2、如果找到，它会找文件中的第一个目标文件（target），在上面的例子中，?嵴业健癳dit”这个文件，并把这个文件作为最终的目标文件。
+    3、如果edit文件不存在，或是edit所依赖的后面的 .o 文件的文件修改时间要比edit这个文件新，那么，他就会执行后面所定义的命令来生成edit这个文件。
+    4、如果edit所依赖的.o文件也不存在，那么make会在当前文件中找目标为.o文件的依赖性，如果找到则再根据那一个规则生成.o文件。（这有点像一个堆栈的过程）
+    5、当然，你的C文件和H文件是存在的，于是make会生成 .o 文件，然后再用 .o 文件生成make的终极任务，也就是执行文件edit了。
+
+    makefile中使用变量
+　　前面的知识已经足以让你自己完成一个简单的makefile了，不过makefile的精妙之处远不止如此，下面来看看如何在makefile中使用变量吧。
+　　在上面的例子中，先让我们看看edit的规则：
+      edit : main.o kbd.o command.o display.o insert.o search.o files.o utils.o
+      cc -o edit main.o kbd.o command.o display.o insert.o search.o files.o utils.o
+　　我们可以看到[.o]文件的字符串被重复了两次，如果我们的工程需要加入一个新的[.o]文 件，那么我们需要在两个地方加（应该是三个地方，还有一个地方在clean中）。
+    当然，我们的makefile并不复杂，所以在两个地方加也不累，但如果 makefile变得复杂，那么我们就有可能会忘掉一个需要加入的地方，而导致编译失败。所以，为了makefile的易维护，在makefile中我们 可以使用变量。makefile的变量也就是一个字符串，理解成C语言中的宏可能会更好。
+
+　　于是，我们使用变量objects
+
+　　objects = main.o kbd.o command.o display.o insert.o search.o files.o utils.o
+
+　　这样一来，原来的makefile变成如下的样子：
+　　objects = main.o kbd.o command.o display.o insert.o search.o files.o utils.o
+    edit : $(objects)
+            cc -o edit $(objects)
+    main.o : main.c defs.h
+            cc -c main.c
+    kbd.o : kbd.c defs.h command.h
+            cc -c kbd.c
+    command.o : command.c defs.h command.h
+            cc -c command.c
+    display.o : display.c defs.h buffer.h
+            cc -c display.c
+    insert.o : insert.c defs.h buffer.h
+            cc -c insert.c
+    search.o : search.c defs.h buffer.h
+            cc -c search.c
+    files.o : files.c defs.h buffer.h command.h
+            cc -c files.c
+    utils.o : utils.c defs.h
+            cc -c utils.c
+    clean :
+            rm edit $(objects)
+
+　　这样看起来方便多了吧，也更加省事了。如果有新的.o文件怎么办？当然是在objects里面添加了。
+
+五、调试
+  既然需要调试，那么生成的可执行文件就需要包含调试的信息，这里应该怎么做呢？很简单，输入 gcc test.c -g -o test。输入命令之后，如果没有编译和链接方面的错误，你就可以看到 可执行文件test了。
+    调试的步骤基本如下所示，
+
+（01） 首先，输入gdb test
+（02） 进入到gdb的调试界面之后，输入list，即可看到test.c源文件
+（03） 设置断点，输入 b main 
+（04） 启动test程序，输入run 
+（05） 程序在main开始的地方设置了断点，所以程序在printf处断住
+（06） 这时候，可以单步跟踪。s单步可以进入到函数，而n单步则越过函数
+（07） 如果希望从断点处继续运行程序，输入c
+（08） 希望程序运行到函数结束，输入finish
+（09） 查看断点信息，输入 info break
+（10） 如果希望查看堆栈信息，输入bt
+（11） 希望查看内存，输入 x/64xh + 内存地址
+（12） 删除断点，则输入delete break + 断点序号
+（13） 希望查看函数局部变量的数值，可以输入print + 变量名
+（14）希望修改内存值，直接输入 print  + *地址 = 数值
+（15） 希望实时打印变量的数值，可以输入display + 变量名
+（16） 查看函数的汇编代码，输入 disassemble + 函数名
+（17） 退出调试输入quit即可
