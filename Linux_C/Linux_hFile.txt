@@ -1,0 +1,198 @@
+1. #include <sys/stat.h>
+
+分类： C语言
+函数原型：
+int stat(const char *restrict pathname, struct stat *restrict buf);
+提供文件名字，获取文件对应属性。
+int fstat(int filedes, struct stat *buf);
+通过文件描述符获取文件对应的属性。
+int lstat(const char *restrict pathname, struct stat *restrict buf);
+连接文件描述命，获取文件属性。
+文件对应的属性
+struct stat {
+        mode_t     st_mode;       //文件对应的模式，文件，目录等
+        ino_t      st_ino;       //inode节点号
+        dev_t      st_dev;        //设备号码
+        dev_t      st_rdev;       //特殊设备号码
+        nlink_t    st_nlink;      //文件的连接数
+        uid_t      st_uid;        //文件所有者
+        gid_t      st_gid;        //文件所有者对应的组
+        off_t      st_size;       //普通文件，对应的文件字节数
+        time_t     st_atime;      //文件最后被访问的时间
+        time_t     st_mtime;      //文件内容最后被修改的时间
+        time_t     st_ctime;      //文件状态改变时间
+        blksize_t st_blksize;    //文件内容对应的块大小
+        blkcnt_t   st_blocks;     //伟建内容对应的块数量
+      };
+示例：
+#include < sys/stat.h >
+#include < stdio.h >
+int main() {
+    struct stat buf;
+    stat("/etc/hosts", &buf);
+    printf("/etc/hosts file size = %d\n", buf.st_size);
+}
+
+
+2.fcntl.h与unistd.h
+fcntl.h定义了很多宏和open,fcntl函数原型
+unistd.h定义了更多的函数原型
+ 
+close（关闭文件）
+表头文件#include<unistd.h>
+定义函数int close(int fd);
+函数说明当使用完文件后若已不再需要则可使用close()关闭该文件，close()会让数据写回磁盘，并释放该文件所占用的资源。参数fd为先前由open()或creat()所返回的文件描述词。
+返回值若文件顺利关闭则返回0，发生错误时返回-1。
+ 
+open（打开文件）
+表头文件
+#include<sys/types.h>
+#include<sys/stat.h>
+#include<fcntl.h>
+定义函数int open( const char * pathname, int flags);
+int open( const char * pathname,int flags, mode_t mode);
+函数说明参数pathname 指向欲打开的文件路径字符串。下列是参数flags 所能使用的旗标:
+O_RDONLY 以只读方式打开文件
+O_WRONLY 以只写方式打开文件
+O_RDWR 以可读写方式打开文件。上述三种旗标是互斥的，也就是不可同时使用，
+但可与下列的旗标利用OR(|)运算符组合。
+O_CREAT 若欲打开的文件不存在则自动建立该文件。
+O_EXCL 如果O_CREAT 也被设置，此指令会去检查文件是否存在。文件若不存在则建立该文件，否则将导致打开文件错误。此外，若
+O_CREAT与O_EXCL同时设置，并且欲打开的文件为符号连接，则会打开文件失败。
+O_NOCTTY 如果欲打开的文件为终端机设备时，则不会将该终端机当成进程控制终端机。
+O_TRUNC 若文件存在并且以可写的方式打开时，此旗标会令文件长度清为0，而原来存于该文件的资料也会消失。
+O_APPEND 当读写文件时会从文件尾开始移动，也就是所写入的数据会以附加的方式加入到文件后面。
+O_NONBLOCK 以不可阻断的方式打开文件，也就是无论有无数据读取或等待，都会立即返回进程之中。
+O_NDELAY 同O_NONBLOCK。
+O_SYNC 以同步的方式打开文件。
+O_NOFOLLOW 如果参数pathname 所指的文件为一符号连接，则会令打开文件失败。
+O_DIRECTORY 如果参数pathname 所指的文件并非为一目录，则会令打开文件失败。
+O_NOATIME 从Linux 2.6.8内核开始,读文件不更新文件最后访问时间
+范例
+#include<unistd.h>
+#include<sys/types.h>
+#include<sys/stat.h>
+#include<fcntl.h>
+main()
+{
+int fd,size;
+char s [ ]=”Linux Programmer!\n”,buffer[80];
+fd=open(“/tmp/temp”,O_WRONLY|O_CREAT);
+write(fd,s,sizeof(s));
+close(fd);
+fd=open(“/tmp/temp”,O_RDONLY);
+size=read(fd,buffer,sizeof(buffer));
+close(fd);
+printf(“%s”,buffer);
+}
+执行Linux Programmer!
+ 
+creat（建立文件）
+表头文件
+#include<sys/types.h>
+#include<sys/stat.h>
+#include<fcntl.h>
+定义函数int creat(const char * pathname, mode_tmode);
+函数说明参数pathname指向欲建立的文件路径字符串。Creat()相当于使用下列的调用方式调用open(),
+open(const char * pathname ,(O_CREAT|O_WRONLY|O_TRUNC));
+
+
+
+
+3.sys/time.h
+time_t time(time_t *tloc)；
+作用：获取日历时间，即从1970年1月1日0点到现在所经历的秒数。 
+struct tm * gmtime (const time_t *timep)； 
+作用：将日历时间转化为格林威治时间，并保存至 TM 结构中 。
+struct tm * localtime(const time_t * timep)；
+作用：将日历时间转化为本地时间并保存至 TM 结构中。 
+
+结构：
+struct tm
+{
+  int tm_sec;    //秒值                  
+  int tm_min;    //分钟值                   
+  int tm_hour;   //小时值               
+  int tm_mday;   //本月第几日              
+  int tm_mon;    //本月第几月                 
+  int tm_year;   //tm_year +1900 = 哪一年               
+  int tm_wday;   //本周第几日
+  int tm_yday;   //本年第几日    
+  int tm_isdst;  //日光节约时间----这个东西我也不懂，至少现在的我还用不到它
+} 
+
+时间显示 
+char * asctime(const struct tm *tm);
+将tm格式的时间转化为字符串形式，如：sat jul 30  08:43:03 2012
+char * ctime(const time_t *timep);
+将日历时间转化为本地时间的字符串形式。
+
+获取时间
+int gettimeofday(struct tomrval *tv,struct timezone *tz);
+获取从今日凌晨到现在的时间差，常用于计算时间耗时。
+timeval结构：
+struct timeval
+{
+    int tv_sec;    //秒数
+    int tv_usec;   //微秒数
+};
+
+
+4.exec
+exec用被执行的程序替换调用它的程序 
+区别：
+fork创建一个新的进程，产生一个新的PID。
+exec启动一个新的程序，替换原有的进程，PID不变。
+#include <unistd.h> 
+
+【1】
+int execl (const char *path,const char *arg1,········，argn);
+path:被执行的程序名（包含完整路径）
+arg1-argn：被执行程序所需要的命令，含参数含程序名，以空指针（NULL）结束 。
+例：
+#include <unistd.h>
+
+int main(void)
+{
+    // 执行/bin目录下的ls, 第一参数为程序名ls, 第二个参数为"-al", 第三个参数为"/etc/passwd"
+    execl("/bin/ls","ls","-al","/etc/passwd",(char*)0);
+    return 0;
+} 
+
+【2】execlp()会从PATH 环境变量所指的目录中查找符合参数file的文件名，找到后便执行该文件，然后将第二个以后的参数当做该文件的argv[0]、argv[1]……，最后一个参数必须用空指针(NULL)作结束。ls
+int execlp(const char *path,const char *arg1.······argn)；
+path:被执行的程序名（不包含路径，将从Path环境变量中直接找该程序）
+arg1-argn：被执行的程序所需的命令行参数，含程序名，以空指针（NULL）结束
+例：
+#include <unistd.h>
+int main(void)
+{
+    execlp("ls","ls","-al","/etc/passwd",(char*)0);
+    return 0;
+} 
+
+【3】 execv会停止执行当前的进程，并且以progname应用进程替换被停止执行的进程，进程ID没有改变。
+int execv(const char *path,char * const argv[]);
+path:被执行的程序名（含完整路径）
+argv[]：被执行程序所需要的命令行参数数组
+例：
+#include <unistd.h>
+int main(void)
+{
+    char *argv[]={"ls","-al","/etc/passwd",(char*)0};
+    execv("/bin/ls",argv);
+    return 0;
+} 
+
+【4】
+int system(const char * string);
+调用fork产生一个子进程，由子进程来调用/bin/ls来执行参数，string代表的命令。
+例：
+#include <stdlib.h>
+int main(void)
+{
+    system("ls -al /etc/passwd");
+    return 0;
+} 
+
+

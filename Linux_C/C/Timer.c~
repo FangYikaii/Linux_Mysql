@@ -31,13 +31,6 @@ void signal_handler(int m)
 
 int main()
 {
-    time_t t1;
-    struct tm* te;
-
-    t1=time(NULL);   //initialize time_t
-    te=localtime(&t1);   //把本地时间保存到tm数据结构te中
-    printf("Now,Date is %s",asctime(te));
-
     signal(SIGALRM,signal_handler);
     set_timer();
     while(count<10000);

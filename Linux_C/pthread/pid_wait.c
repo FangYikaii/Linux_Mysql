@@ -29,7 +29,7 @@ int main()
     //父进程，fork返回子进程的id
     else
     {
-//        waitpid(childpid,&status,0);  //线程等待，等到子进程执行完毕,status返回子进程的状态
+        waitpid(childpid,&status,0);  //线程等待，等到子进程执行完毕,status返回子进程的状态
         puts("In parent");
         printf("\tparent pid=%d\n",getpid());
         printf("\tparent ppid=%d\n",getppid());
