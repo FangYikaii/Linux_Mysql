@@ -1,0 +1,87 @@
+curl
+
+$ curl http://www.linuxidc.com
+回车之后，www.linuxidc.com 的html就稀里哗啦地显示在屏幕上了
+
+要想把读过来页面存下来，是不是要这样呢？
+$ curl -o page.html http://www.linuxidc.com
+
+使用curl的时候，用这个option可以指定http访问所使用的proxy服务器及其端口： -x
+$ curl -x 123.45.67.89:1080 -o page.html http://www.linuxidc.com
+
+访问有些网站的时候比较讨厌，他使用cookie来记录session信息。
+$ curl -x 123.45.67.89:1080 -o page.html -D cookie0001.txt http://www.linuxidc.com
+
+那么，下一次访问的时候，如何继续使用上次留下的cookie信息呢？要知道，很多网站都是靠监视你的cookie信息，来判断你是不是不按规矩访问他们的网站的。
+
+这次我们使用这个option来把上次的cookie信息追加到http request里面去： -b
+$ curl -x 123.45.67.89:1080 -o page1.html -D cookie0002.txt -b cookie0001.txt http://www.linuxidc.com
+
+
+
+
+
+cat
+将文件file1复制为file2可以用下面命令
+cp file1 file2
+cat file1 >file2
+cat < file1 >file2
+dd if=file1 of=file2
+cat file1 | cat >file2
+cp命令 ：cp指令用于复制文件或目录。
+        将文件file1复制成文件file2命令如下：cp file1 file2
+cat命令 ：cat命令是linux下的一个文本输出命令，通常是用于观看某个文件的内容的。且跳到文件的最后。
+         一次显示整个文件命令如下： cat filename
+> : linux中的数据流重导向：输出导向，覆盖导向的文件内容。
+< : linux中的数据流重导向：输入导向，理解为原本由键盘输入改为文本输入 
+
+
+
+
+
+dd
+作用是用指定大小的块拷贝一个文件，并在拷贝的同时进行指定的转换。
+        参数：if  输入文件（或设备名称）  of  输出文件（或设备名称）
+       将文件file1拷贝到文件file2中命令如下：  dd if=file1 of=file2  
+| ：管道命令操作符，处理经由前面一个指令传出的正确输出信息，然后，传递给下一个命令，作为标准的输入
+
+
+
+
+
+find
+find是根据文件名进行查找grep是对文件的内容进行搜索
+
+
+
+
+
+netstat
+显示网络有关的信息，比如套接口使用情况、路由、接口、协议（TCP等）等
+
+
+
+
+
+
+sed
+sed 是一种在线编辑器，它一次处理一行内容。处理时，把当前处理的行存储在临时缓冲区中，称为“模式空间”（pattern space），接着用sed命令处理缓冲区中的内容，处理完成后，把缓冲区的内容送往屏幕。接着处理下一行，这样不断重复，直到文件末尾。文件内容并没有 改变，除非你使用重定向存储输出。Sed主要用来自动编辑一个或多个文件；简化对文件的反复操作；编写转换程序等。 
+-n 在一般 sed 的用法中，所有来自 STDIN 的数据一般都会被列出到屏幕上。但如果加上 -n 参数后，则只有经过 sed 特殊处理的那一行才会被列出来。
+p 打印模板块的行。
+
+
+
+tar解压缩命令
+语法：tar [主选项+辅选项] 文件或者目录 
+使用该命令时，主选项是必须要有的，它告诉tar要做什么事情，辅选项是辅助使用的，可以选用。
+主选项： 
+-c 相当于打包。创建的档案文件，如果用户想打包一个目录或是一些文件，就要选择这个选项。 
+-x 相当于拆包。从档案文件中释放文件。 
+-t 列出档案文件的内容。查看已经备份了哪些文件。 
+-r 增加文件到指定包中 
+-u 更新包中的文件 
+
+
+
+tcpdump
+是简单可靠网络监控的实用工具

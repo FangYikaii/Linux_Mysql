@@ -145,24 +145,132 @@ read(fd,r_buf,1000);
 (5)解除连接
 read(fd,r_buf,1000);
 
-3.消息队列
-消息队列就是一个消息的链表，可以把一条消息看做一个记录，具有特定的格式以及特定的优先级，消息的发送和接收都以条为单位。
-消息队列提供了一种从一个进程向另一个进程发送一个数据块的方法。接收进程可以独立地接收含有不同类型值的数据块。  
 
-内存
-一个进程不能简单地将自己的内存空间地址传递给其他进程使用，这是因为Linux操作系统的内存保护机制或者说内存映射机制的限制。 
-在一个进程内，指向一块内存的指针实际上是虚拟地址，而不是真正的物理内存地址，这个地址仅在当前进程内使用才是有效的。 
-但是，如果通过某种方式能够实现多个进程访问一块物理内存，那么进程之间的数据交换就可以通过读写内存来进行，这将是一种效率很高的通信方式。 
-共享内存为在多个进程之间共享和传递数据提供了一种有效的方式。由于它并未提供同步机制，所以通常需要用其他的机制来同步对共享内存的访问。对共享内存的同步控制必须由程序员来负责。
+【
 API
 系统建立IPC通讯（如消息队列、共享内存时）必须指定一个ID值。通常情况下，该id值通过ftok函数得到。
 ftok原型如下： 
 key_t ftok( char * fname, int id )
 fname就时你指定的文件名(该文件必须是存在而且可以访问的)，id是子序号，虽然为int，但是只有8个比特被使用(0-255)。
-当成功执行的时候，一个key_t值将会被返回，否则 -1 被返回。
+当成功执行的时候，一个key_t值将会被返回，否则-1被返回。
 在一般的UNIX实现中，是将文件的索引节点号取出，前面加上子序号得到key_t的返回值。
 如指定文件的索引节点号为65538，换算成16进制为 0x010002，而你指定的ID值为38，换算成16进制为0x26，则最后的key_t返回值为0x26010002。 查询文件索引节点号的方法是： ls -i。
 在成功获取到key之后，就可以使用该key作为某种方法的进程间通信的key值，例如shmget共享内存的方式。
+】
+
+3.消息队列
+消息队列就是一个消息的链表，可以把一条消息看做一个记录，具有特定的格式以及特定的优先级，消息的发送和接收都以条为单位。
+消息队列提供了一种从一个进程向另一个进程发送一个数据块的方法。接收进程可以独立地接收含有不同类型值的数据块。  
+（1）IPC通讯 
+#include <sys/types.h>
+#include <sys/ipc.h>
+key_t ftok(char *pathname,char proj);
+系统建立IPC通讯 （消息队列、信号量和共享内存） 时必须指定一个ID值。通常情况下，该id值通过ftok函数得到。
+功能：返回文件对应的键值。
+	pathname:文件名
+	proj：项目名（不为0即可）
+（2）打开/创建消息队列
+#include <sys/msg.h>
+int msgget(key_t key,int msgflg);
+功能：返回与键值key相对应的消息队列描述字 
+	key:键值，由ftok获得。
+	msgflg：标志位 。
+	标志位的取值：
+		IPC_CREAT	         创建新的消息队列。
+		IPC_EXCL		与IPC_CREAT一同使用，表示如果要穿件的消息队列已存在，则返回错误。
+		IPC_NOWAIT	读写消息队列要求无法得到满足时，不阻塞。 
+	以下两种情况下，将创建一个新的消息队列。
+		1.如果没有与键值key相对应的消息队列，并且msgflg中包含了IPC_CREAT标志位。
+		2.key参数为IPC_PRIVATE 
+int open_queue(key_t keyval)
+{
+    int qid;
+    if ((qid = msgget(keyval,IPC_CREAT)) == -1)
+    {
+        return -1;
+    }
+    return qid;
+} 
+（3）发送消息
+int msgsnd(int msqid,struct msgbuf *msgp,int msgsz,int msgflg);
+	功能：向消息队列发送一条消息。
+	msqid：消息队列描述符。
+	msgp：消息结构指针。
+	msgsz：消息大小。
+	msgflg：发送消息的标志。
+消息格式：
+	struct msgbuf
+{
+    long mtype;   //消息类型 > 0
+    char mtext[0];//消息数据的首地址
+}； 
+（4）接收消息
+int msmrcv(int msqid,struct msgbuf *msgp,int msgsz,,long msgtyp,int msgflg) 
+	功能：从msqid代表的消息队列中读取一个msgtyp类型的消息，并把消息存储在msg指向的msgbuf结构中
+		成功读取消息以后，队列中的这条信息将删除。
+简单的例子：
+int read_message(int qid,long type,struct mymsgbuf *qbuf)
+{
+    int result,length;
+    length = sizeof(struct mymsgbuf) - sizeof(long);
+    if ((result = msgrcv(qid,qbuf,length,type,0)) == -1)
+    {
+        return -1;
+    }
+    return result;
+} 
+
+
+4.共享内存（创建：shmget，映射：shmat）
+一个进程不能简单地将自己的内存空间地址传递给其他进程使用，这是因为Linux操作系统的内存保护机制或者说内存映射机制的限制。 
+在一个进程内，指向一块内存的指针实际上是虚拟地址，而不是真正的物理内存地址，这个地址仅在当前进程内使用才是有效的。 但是，如果通过某种方式能够实现多个进程访问一块?
+
+共享内存为在多个进程之间共享和传递数据提供了一种有效的方式。由于它并未提供同步机制，所以通常需要用其他的机制来同步对共享内存的访问。对共享内存的同步控制必须由程序员来负责。
+1，定义：被多个进程共同使用的一段物理内存。
+2，创建共享内存
+int shmget(ket_t key,int size,int shmflg);	//size是创建共享内存的大小
+		key标示共享内存的键值：O/IPC_PRVIATE，当key的取值为IPC_PRIVATE，则函数shmget()将创建一块新的共享内存，如果key的取值为0，而参数shmflg中又设	置IPC_PIRVATE这个标志，则会同样创建一块新的共享内存。 
+		返回值：成功，则返回共享内存标示符，失败则返回-1.
+3，映射
+int shmat(int shmid,char *shmaddr,int flag);
+         shmid: shmget 函数返回的共享存储标示符
+	shmaddr：假如为0 的话，系统自动指定地址
+	flag：决定以什么方式来确定映射的地址（通常为0）
+返回值：
+	如果成功，则返回共享内存映射到进程中的地址，失败则返回-1
+	当一个进程不在需要共享内存时，需要把它从进程地址空间中脱离
+	intshmadt（char * shmaddr）；
+
+
+5.信号
+1.常见的信号类型：
+	SIGHUP	从终端发出的结束信号
+	SIGINT	来自键盘的终断信号（ctrl-c）
+	SIGKILL	该信号结束接收信号的进程
+	SIGTERM 	kill命令发出的信号
+	SIGSTOP	 来自键盘（ctrl-z）或调试程序的停止执行信号
+2.发送信号的主要函数有kill和raise
+	区别：
+		kill既可向自身发送信号，也可以像其他进程发送信号
+		raise只向进程自身发送信号
+#include <sys/types.h> 
+#include <sysnal.h>
+int kill(pid_t pid,int signo);
+int raise(int signo);
+kill的pid参数：
+	①，pid > 0		将信号发送之后进程ID为PID的进程
+	②，pid == 0	将信号发送给其他进程组的进程		
+	③，pid < 0		将信号发送给其他进程组ID等于PID绝对值的进程 
+	④，pid == -1	将信号发送给所有的进程
+3.“闹钟函数”
+#include <unistd.h>
+unsignd int alarm(unsigned int seconds);
+经过seconds秒后，会产生SIGALRM信号，如果不捕捉此信号，则默认动作是终止该进程
+4.”挂起“----pause
+	pause函数使调用进程挂起直至捕捉到一个信号
+#include <unistd.h>
+int pause(void)；
+只有执行一个信号处理函数后，挂起来才结束。
 
 
 
@@ -198,7 +306,7 @@ char *strerror(int errnum);
 五、变量存储
 在偏底层的开发中，需要了解程序的是如何存储的。
 “内存总是被进程占用”，这句话换过来可以这么理解：进程总是需要内存。当fork()或者exec()一个进程的时候，系统内核就会分配一定量的VM给进程，
-作为进程的内存空间，大小由BSS段，Data段的已定义的全局变量、静态变量、Text段中的字符直接量、程序本身的内存映像等，还有Stack段的局部变量决定。当然，还可以通过malloc()等函数动态分配内存,向上扩大heap。
+作为进程的内存空间，大小由BSS段，Data段的已定??的全局变量、静态变量、Text段中的字符直接量、程序本身的内存映像等，还有Stack段的局部变量决定。当然，还可以通过malloc()等函数动态分配内存,向上扩大heap。
 一个典型的Linux C程序内存空间由如下几部分组成：
 代码段（.text）：这里存放的是CPU要执行的指令。代码段是可共享的，相同的代码在内存中只会有一个拷贝，同时这个段是只读的，防止程序由于错误而修改自身的指令。
 初始化数据段（.data）：这里存放的是程序中需要明确赋初始值的变量，例如位于所有函数之外的全局变量：int val=100（初始化为0的全局变量放在.bss段中）。需要强调的是，以上两段都是位于程序的可执行文件中，内核在调用exec函数启动该程序时从源程序文件中读入。
@@ -237,7 +345,7 @@ main()
 函数说明：sleep()会令目前的进程暂停, 直到达到参数seconds 所指定的时间, 或是被信号所中断.
 返回值：若进程/线程挂起到参数所指定的时间则返回0，若有信号中断则返回剩余秒数。
 
-linux下Sleep()函数：单位为毫秒
+linux下Sleep()函数：?ノ晃撩?
 如果需要更精确可以用usleep单位为微秒
 线程休眠函数:void usleep(unsigned long usec);
 
@@ -281,3 +389,56 @@ Linux链接分两种，一种被称为硬链接（Hard Link），另一种被称为符号链接（Symbolic L
 其原因如上所述，因为对应该目录的索引节点有一个以上的连接。只删除一个连接并不影响索引节点本身和其它的连接，只有当最后一个连接被删除后，文件的数据块及目录的连接才会被释放。也就是说，文件真正删除的条件是与之相关的所有硬连接文件均被删除。
 【软连接】
 另外一种连接称之为符号连接（Symbolic Link），也叫软连接。软链接文件有类似于Windows的快捷方式。它实际上是一个特殊的文件。在符号连接中，文件实际上是一个文本文件，其中包含的有另一文件的位置信息。
+
+
+
+八.
+文件编程
+（1）创建
+int creat (const char *filename, mode_t mode);
+filename：即要创建的文件名（包含路径，缺省为当前路径）
+mode：创建模式
+常见的模式： 
+ S_IRUSR     可读
+ S_IWUSR	    可写
+ S_IXUSR	    可执行
+ S_IRWXU	    可读，写，执行 
+ 还可以用数字表示：
+ 4	代表可读 
+ 2	代表可写
+ 1	代表可执行
+ 7	代表可读，写，执行
+（2）打开
+int open(const char *pathname, int flags);
+int open(const char *pathname, int flags,mode_t mode); 
+	pathname： 要?蚩奈募ò肪叮笔∥鼻奥肪叮?
+	flags：打开文件的标志
+常见的打开标志：
+O_DONLY		只读方式打开
+O_WRONLY	         只写方式打开
+O_RDWR		读写方式打开
+O_APPEND   	追加方式打开
+O_CREAT		创建一个文件（当要打开的文件不存在的时候）
+O_NOBLOCK 	非阻塞的方式打开------------------------（这个到现在还不是很明白什么是非阻塞，希望得到大牛指点一下） 
+（3）关闭
+int close（int fd);
+fd:文件描述符（打开文件时，系统分配的一个标志符） 
+（4）读 
+int read(int fd,const void *buf,size_t length); 
+从文件描述符fd所指定的文件中读取length个字节到buf所指向的缓冲区中，返回值为实际读取的字节数。
+（5）写
+int write(int fd,const void *buf ,size_t length);
+length个字节从buf指向的缓冲区中写入到文件描述符fd指向的文件中，返回值为实际写入的字节数。 
+（6）定位 
+int lseek(int fd,offset_t offset,int whence);
+将文件读写指针相对whence移动offset个字节，操作成功时，返回文件指针相对于文件头的位置，whence可使用如下值： 
+SEEK_SET		相对文件开头
+SEEK_CUR		相对文件读写指针的当前位置
+SEEK_END		相对文件末尾
+offset可取负值，表示想前移动，如： lseek（fd，-5，SEEK_CUR）表示将文件指针相对当前位置向前移动5个字节
+用lseek（fd，0，SEEK_END）可以测文件的长度，因为其返回值就是相对于文件头的位置。
+（7）访问判断 
+int access(const chat * pathname,int mode); 
+pathname:文件名称
+mode：要判断的访问文件权限，可以 取以下值或是他们的组合，R_OK：文件可读，W_OK：文件可写。X_OK：文件可执行，F_OK：文件存在
+返回值：当我们测试成功时，函数返回0，负责如果一个条件不符，返回-1 

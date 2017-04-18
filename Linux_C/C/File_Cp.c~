@@ -25,14 +25,14 @@ int main(int argc,char* argv[])
     //打开源文件
     if((from_fd=open(argv[1],O_RDONLY))==-1)
     {
-        fprintf(stderr,"Open %s Error:%s\n",*argv[1],strerror(errno));
+        fprintf(stderr,"Open %s Error:%s\n",argv[1],strerror(errno));
         exit(1);
     }
 
     //创建目的文件
     if((to_fd=open(argv[2],O_WRONLY|O_CREAT,S_IRUSR|S_IWUSR))==-1)
     {
-        fprintf(stderr,"Open %s Error:%s\n",*argv[2],strerror(errno));
+        fprintf(stderr,"Open %s Error:%s\n",argv[2],strerror(errno));
         exit(1);
     }
 
