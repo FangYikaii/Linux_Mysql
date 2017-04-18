@@ -177,7 +177,7 @@ int msgget(key_t key,int msgflg);
 	msgflg：标志位 。
 	标志位的取值：
 		IPC_CREAT	         创建新的消息队列。
-		IPC_EXCL		与IPC_CREAT一同使用，表示如果要穿件的消息队列已存在，则返回错误。
+		IPC_EXCL		与IPC_CREAT一同使用，表示如果要要传递的消息队列已存在，则返回错误。
 		IPC_NOWAIT	读写消息队列要求无法得到满足时，不阻塞。 
 	以下两种情况下，将创建一个新的消息队列。
 		1.如果没有与键值key相对应的消息队列，并且msgflg中包含了IPC_CREAT标志位。
@@ -201,7 +201,7 @@ int msgsnd(int msqid,struct msgbuf *msgp,int msgsz,int msgflg);
 消息格式：
 	struct msgbuf
 {
-    long mtype;   //消息类型 > 0
+    long mtype;   //消息类型 > 0，一般用pid码
     char mtext[0];//消息数据的首地址
 }； 
 （4）接收消息
@@ -219,7 +219,12 @@ int read_message(int qid,long type,struct mymsgbuf *qbuf)
     }
     return result;
 } 
-
+（5）设置消息队列属性
+int msgctl ( int msgqid, int cmd, struct msqid_ds *buf );
+参数：msgctl 系统调用对 msgqid 标识的消息队列执行 cmd 操作，系统定义了 3 种 cmd 操作： IPC_STAT , IPC_SET , IPC_RMID
+      IPC_STAT : 该命令用来获取消息队列对应的 msqid_ds 数据结构，并将其保存到 buf 指定的地址空间。
+      IPC_SET : 该命令用来设置消息队列的属性，要设置的属性存储在buf中。     
+      IPC_RMID : 从内核中删除 msqid 标识的消息队列。
 
 4.共享内存（创建：shmget，映射：shmat）
 一个进程不能简单地将自己的内存空间地址传递给其他进程使用，这是因为Linux操作系统的内存保护机制或者说内存映射机制的限制。 
@@ -381,7 +386,7 @@ int main()
 
 
 
-七、软连接硬链接
+七?⑷砹佑擦唇?
 Linux链接分两种，一种被称为硬链接（Hard Link），另一种被称为符号链接（Symbolic Link）。默认情况下，ln命令产生硬链接。
 【硬连接】
 硬连接指通过索引节点来进行连接。在Linux的文件系统中，保存在磁盘分区中的文件不管是什么类型都给它分配一个编号，称为索引节点号(Inode Index)。
@@ -428,7 +433,7 @@ int read(int fd,const void *buf,size_t length);
 从文件描述符fd所指定的文件中读取length个字节到buf所指向的缓冲区中，返回值为实际读取的字节数。
 （5）写
 int write(int fd,const void *buf ,size_t length);
-length个字节从buf指向的缓冲区中写入到文件描述符fd指向的文件中，返回值为实际写入的字节数。 
+length个字节从buf指?虻幕撼迩行慈氲轿募枋龇鹒d指向的文件中，返回值为实际写入的字节数。 
 （6）定位 
 int lseek(int fd,offset_t offset,int whence);
 将文件读写指针相对whence移动offset个字节，操作成功时，返回文件指针相对于文件头的位置，whence可使用如下值： 

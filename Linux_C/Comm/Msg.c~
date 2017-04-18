@@ -15,7 +15,8 @@ int main()
     int msgid;
     int ret;
     struct msg_buf msgbuf;
-    key=ftok("../tmp/msg",'a');
+    key=ftok("./tmp/msg",100);
+
     printf("key = [%d] \n",key);
 
 
