@@ -50,7 +50,7 @@ socket函数对应于普通文件的打开操作。普通文件的打开操作返回一个文件描述字，而sock
 参数type：指定socket类型。常用的socket类型有，SOCK_STREAM、SOCK_DGRAM、SOCK_RAW、SOCK_PACKET、SOCK_SEQPACKET等。
 参数protocol：故名思意，就是指定协议。常用的协议有，IPPROTO_TCP、IPPTOTO_UDP、IPPROTO_SCTP、IPPROTO_TIPC等，它们分别对应TCP传输协议、UDP传输协议、STCP传输协议、TIPC传输协议。 
 注意：并不是上面的type和protocol可以随意组合的，如SOCK_STREAM不可以跟IPPROTO_UDP组合。当protocol为0时，会自动选择type类型对应的默认协议。
-当我们调用socket()创建一个socket时，返回的socket描述字它存在于协议族（address family，AF_XXX）空间中，但没有一个具体的地址。如果想要给它赋值一个地址，就必须调用bind()函数，否则就当调用connect()、listen()时系统会自动随机分配一个端口。
+当我们调用socket()创建一个socket时，返回的socket描述字它存在于协议族（address family，AF_XXX）空间中，但没有一个具体的地址。如果想要给它赋值一个地址，就必须调用bind()函数，否?蚓偷钡饔胏onnect()、listen()时系统会自动随机分配一个端口。
 
 bind()函数
 正如上面所说bind()函数把一个地址族中的特定地址赋给socket。例如对应AF_INET、AF_INET6就是把一个ipv4或ipv6地址和端口号组合赋给socket。
@@ -148,6 +148,6 @@ struct hostent
 #define h_addr  h_addr_list[0]  /* for backward compatibility */
 它的使用注意点是：
 这个指针指向一个静态数据，它会被后继的调用所覆盖。简单的说，它是多线程或者多进程不安全的。
-我们最好使用h_addr代理直接使用h_addr_list，这样能够提高日后的兼容性。
+我们最好使用h_addr代理直接使?胔_addr_list，这样能够提高日后的兼容性。
 h_addr是指向一个长度为h_length的主机地址，它不是网络格式，所以在赋值给struct in_addr时，应该通过htonl来转化。我们可以通过下面一个学习程序来说明这种情况。
 如果我们使用GNU环境，我们可以使用gethostbyname_r或者gethostbyname2_r来替换掉gethostbyname函数。它们能够良好的解决多线程或多进程安全性问题，并且提供选择地址族参数。
