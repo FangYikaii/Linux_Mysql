@@ -38,7 +38,7 @@ int main(int argc,char** argv)
     else              //父进程：写
     {
         p_addr=shmat(shmid,0,0);  //映射
-        memset(p_addr,'\0',1024);   //把p_addr开始的1024个字符长度的地址置为'\0'
+        memset(p_addr,'\0',1024);
         strncpy(p_addr,argv[1],1024);    //strncpy拷贝字符串：拷贝argv[1]到p_addr中，拷贝长度为1024
         wait(NULL);
         exit(0);
